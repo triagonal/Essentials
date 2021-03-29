@@ -902,6 +902,11 @@ public class Essentials extends JavaPlugin implements net.ess3.api.IEssentials {
     }
 
     @Override
+    public int broadcastMessage(final String message, final boolean keywords) {
+        return broadcastMessage(null, null, message, keywords, u -> false);
+    }
+
+    @Override
     public int broadcastMessage(final IUser sender, final String message) {
         return broadcastMessage(sender, null, message, false, u -> false);
     }

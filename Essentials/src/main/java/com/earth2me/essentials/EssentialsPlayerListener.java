@@ -3,6 +3,7 @@ package com.earth2me.essentials;
 import com.earth2me.essentials.commands.Commandfireball;
 import com.earth2me.essentials.textreader.IText;
 import com.earth2me.essentials.textreader.KeywordReplacer;
+import com.earth2me.essentials.textreader.SimpleTextInput;
 import com.earth2me.essentials.textreader.TextInput;
 import com.earth2me.essentials.textreader.TextPager;
 import com.earth2me.essentials.utils.DateUtil;
@@ -54,8 +55,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
-import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -218,14 +217,15 @@ public class EssentialsPlayerListener implements Listener {
         if (hideJoinQuitMessages() || (ess.getSettings().allowSilentJoinQuit() && user.isAuthorized("essentials.silentquit"))) {
             event.setQuitMessage(null);
         } else if (ess.getSettings().isCustomQuitMessage() && event.getQuitMessage() != null) {
-            final Player player = event.getPlayer();
-            final String msg = ess.getSettings().getCustomQuitMessage()
-                .replace("{PLAYER}", player.getDisplayName())
-                .replace("{USERNAME}", player.getName())
-                .replace("{ONLINE}", NumberFormat.getInstance().format(ess.getOnlinePlayers().size()))
-                .replace("{UPTIME}", DateUtil.formatDateDiff(ManagementFactory.getRuntimeMXBean().getStartTime()));
-
-            event.setQuitMessage(msg.isEmpty() ? null : msg);
+            event.setQuitMessage(null);
+            final IText input = new SimpleTextInput(ess.getSettings().getCustomQuitMessage());
+            final IText output = new KeywordReplacer(input, user.getSource(), ess);
+            for (String line : output.getLines()) {
+                if (line.isEmpty()) {
+                    return;
+                }
+                ess.broadcastMessage(line, false);
+            }
         }
 
         user.startTransaction();
@@ -332,13 +332,13 @@ public class EssentialsPlayerListener implements Listener {
                 } else if (message == null || hideJoinQuitMessages()) {
                     //NOOP
                 } else if (ess.getSettings().isCustomJoinMessage()) {
-                    final String msg = ess.getSettings().getCustomJoinMessage()
-                        .replace("{PLAYER}", player.getDisplayName()).replace("{USERNAME}", player.getName())
-                        .replace("{UNIQUE}", NumberFormat.getInstance().format(ess.getUserMap().getUniqueUsers()))
-                        .replace("{ONLINE}", NumberFormat.getInstance().format(ess.getOnlinePlayers().size()))
-                        .replace("{UPTIME}", DateUtil.formatDateDiff(ManagementFactory.getRuntimeMXBean().getStartTime()));
-                    if (!msg.isEmpty()) {
-                        ess.getServer().broadcastMessage(msg);
+                    final IText input = new SimpleTextInput(ess.getSettings().getCustomJoinMessage());
+                    final IText output = new KeywordReplacer(input, user.getSource(), ess);
+                    for (String line : output.getLines()) {
+                        if (line.isEmpty()) {
+                            return;
+                        }
+                        ess.broadcastMessage(line, false);
                     }
                 } else if (ess.getSettings().allowSilentJoinQuit()) {
                     ess.getServer().broadcastMessage(message);
